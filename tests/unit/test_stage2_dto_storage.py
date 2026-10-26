@@ -181,11 +181,14 @@ async def test_temp_file_manager_suppresses_file_not_found(tmp_path):
         settings.TEMP_STORAGE_PATH = original_path
 
 
-def test_docx_extractor_stub():
+def test_docx_extractor_empty_document(tmp_path):
+    from docx import Document
+    docx_file = tmp_path / "empty.docx"
+    Document().save(str(docx_file))
+
     extractor = DocxExtractor()
-    result = extractor.extract("any_path/test.docx")
+    result = extractor.extract(str(docx_file))
     assert isinstance(result, DocumentDTO)
     assert result.paragraphs == []
     assert result.tables == []
-    assert result.total_pages is None
-    assert result.words_count is None
+
