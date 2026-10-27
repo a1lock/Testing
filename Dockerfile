@@ -24,6 +24,9 @@ RUN mkdir -p /tmp/vkr_storage && chmod 777 /tmp/vkr_storage
 COPY alembic.ini /code/alembic.ini
 COPY alembic /code/alembic
 
+# Copy rule presets and resources
+COPY resources /code/resources
+
 # Copy application source code
 COPY app /code/app
 

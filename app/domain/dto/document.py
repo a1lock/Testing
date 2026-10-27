@@ -21,6 +21,8 @@ class ParagraphDTO:
     indent_mm: float = 0.0
     is_heading: bool = False
     runs: list[RunDTO] = field(default_factory=list)
+    list_level: int | None = None
+    has_image: bool = False
 
 
 @dataclass
@@ -40,4 +42,8 @@ class DocumentDTO:
     tables: list[TableDTO] = field(default_factory=list)
     total_pages: int | None = None
     words_count: int | None = None
+    margin_left_mm: float | None = None
+    margin_right_mm: float | None = None
+    margin_top_mm: float | None = None
+    margin_bottom_mm: float | None = None
 

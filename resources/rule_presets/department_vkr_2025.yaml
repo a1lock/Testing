@@ -1,0 +1,46 @@
+profile_name: "Кафедра ИТ — Нормоконтроль 2025"
+rules:
+  PARAGRAPH_INDENT:
+    enabled: true
+    expected_mm: 12.5
+    tolerance_mm: 1.0
+  PAGE_MARGINS:
+    enabled: true
+    left_mm: 30.0
+    right_mm: 15.0
+    top_mm: 20.0
+    bottom_mm: 20.0
+  MAIN_TEXT_FONT:
+    enabled: true
+    expected_font_name: "Times New Roman"
+    expected_size_pt: 14.0
+  HEADINGS_FORMAT:
+    enabled: true
+  REQUIRED_SECTIONS:
+    enabled: true
+  CHAPTERS_COUNT:
+    enabled: true
+    min_chapters: 3
+  TOC_MATCHING:
+    enabled: true
+  FIGURES_FORMAT:
+    enabled: true
+  TABLES_FORMAT:
+    enabled: true
+  LISTINGS_FORMAT:
+    enabled: true
+  APPENDICES_FORMAT:
+    enabled: true
+  SOURCES_COUNT:
+    enabled: true
+    min_count: 50
+    min_foreign_percent: 5.0
+    max_electronic_percent: 50.0
+  CROSS_REFERENCES:
+    enabled: true
+  LISTS_FORMAT:
+    enabled: true
+  ANTI_PLAGIARISM_HOMOGLYPHS:
+    enabled: true
+  FORBIDDEN_ANGLICISMS:
+    enabled: true

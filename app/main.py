@@ -25,12 +25,3 @@ async def health_check() -> dict:
 
 
 app.include_router(api_router, prefix="/api/v1")
-
-
-@app.get("/health", tags=["Health"])
-async def health_check() -> dict:
-    return {"status": "ok"}
-
-
-app.include_router(api_router, prefix="/api/v1")
-

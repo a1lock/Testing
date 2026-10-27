@@ -9,6 +9,7 @@ services:
       - "8000:8000"
     volumes:
       - ./app:/code/app
+      - ./resources:/code/resources
       - ./alembic:/code/alembic
       - ./alembic.ini:/code/alembic.ini
       - vkr_storage:/tmp/vkr_storage
@@ -35,6 +36,7 @@ services:
     command: celery -A app.core.celery_app.celery_app worker --loglevel=info
     volumes:
       - ./app:/code/app
+      - ./resources:/code/resources
       - ./alembic:/code/alembic
       - ./alembic.ini:/code/alembic.ini
       - vkr_storage:/tmp/vkr_storage
@@ -86,8 +88,6 @@ services:
   gotenberg:
     image: gotenberg/gotenberg:8
     container_name: vkr_gotenberg
-    ports:
-      - "3000:3000"
 
 volumes:
   postgres_data:

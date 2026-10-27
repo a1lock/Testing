@@ -241,3 +241,44 @@ def test_rule_engine_empty_config_and_empty_document():
     assert engine.profile_config == {}
     violations = engine.run(DocumentDTO())
     assert violations == []
+
+
+def test_paragraph_indent_rule_skips_figure_and_table_captions():
+    """Verify that figure and table captions and image paragraphs do not trigger indent errors."""
+    doc = DocumentDTO(
+        paragraphs=[
+            # Figure caption: should be skipped
+            ParagraphDTO(
+                text="Рисунок 1 – Настройка оборудования",
+                style_name="Normal",
+                indent_mm=0.0,
+                alignment="CENTER",
+            ),
+            # Table caption: should be skipped
+            ParagraphDTO(
+                text="Таблица 2 – План адресации для подсети",
+                style_name="Normal",
+                indent_mm=0.0,
+                alignment="LEFT",
+            ),
+            # Embedded image paragraph: should be skipped
+            ParagraphDTO(
+                text="",
+                style_name="Normal",
+                indent_mm=0.0,
+                has_image=True,
+            ),
+            # Regular text paragraph starting with 'Рисунок 1' but without dash: MUST be checked!
+            ParagraphDTO(
+                text="Рисунок 1 демонстрирует общую схему взаимодействия маршрутизаторов.",
+                style_name="Normal",
+                indent_mm=0.0,  # Missing indent -> violation!
+            ),
+        ]
+    )
+    rule = ParagraphIndentRule()
+    violations = rule.check(doc, {"expected_mm": 12.5, "tolerance_mm": 1.0})
+
+    assert len(violations) == 1
+    assert violations[0].rule_id == "PARAGRAPH_INDENT"
+    assert "Рисунок 1 демонстрирует" in violations[0].location.snippet

@@ -172,3 +172,63 @@ def test_docx_extractor_none_properties(tmp_path):
     assert p_dto.runs[0].is_italic is False
     assert p_dto.runs[0].font_size_pt is None
 
+
+def test_docx_extractor_style_inheritance_indent(tmp_path):
+    """Verifies that paragraph indent defined on a style is correctly resolved."""
+    docx_file = tmp_path / "style_indent.docx"
+    doc = Document()
+
+    # Define style with first-line indent
+    style = doc.styles.add_style("IndentStyle", 1)
+    style.paragraph_format.first_line_indent = Mm(12.5)
+
+    p = doc.add_paragraph("Paragraph with indent from style", style="IndentStyle")
+    # No direct first_line_indent set on p
+    doc.save(str(docx_file))
+
+    extractor = DocxExtractor()
+    result = extractor.extract(str(docx_file))
+
+    assert len(result.paragraphs) == 1
+    p_dto = result.paragraphs[0]
+    assert abs(p_dto.indent_mm - 12.5) < 0.2
+
+
+def test_docx_extractor_xml_style_hierarchy_russian_name(tmp_path):
+    """Verifies that style with Russian name (e.g. 'Дефолт') and XML attributes resolves properly."""
+    docx_file = tmp_path / "russian_style.docx"
+    doc = Document()
+
+    p = doc.add_paragraph("Текст абзаца стиля Дефолт")
+    # Inject style and reference
+    from docx.oxml import parse_xml
+
+    style_xml = (
+        '<w:style xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
+        'w:type="paragraph" w:styleId="DefStyle">'
+        '<w:name w:val="Дефолт"/>'
+        '<w:pPr>'
+        '  <w:ind w:firstLine="709"/>'
+        '  <w:jc w:val="both"/>'
+        '</w:pPr>'
+        '<w:rPr>'
+        '  <w:sz w:val="28"/>'
+        '</w:rPr>'
+        '</w:style>'
+    )
+    doc.styles.element.append(parse_xml(style_xml))
+    p._p.get_or_add_pPr().append(
+        parse_xml('<w:pStyle xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:val="DefStyle"/>')
+    )
+    doc.save(str(docx_file))
+
+    extractor = DocxExtractor()
+    result = extractor.extract(str(docx_file))
+
+    assert len(result.paragraphs) == 1
+    p_dto = result.paragraphs[0]
+    assert abs(p_dto.indent_mm - 12.5) < 0.2
+    assert p_dto.alignment == "JUSTIFY"
+    assert p_dto.runs[0].font_size_pt == 14.0
+
+

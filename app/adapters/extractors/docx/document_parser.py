@@ -2,6 +2,7 @@ from docx import Document
 from docx.shared import Mm
 
 from app.adapters.extractors.docx.app_props import extract_page_count
+from app.adapters.extractors.docx.styles_xml import StyleHierarchyResolver
 from app.domain.dto.document import DocumentDTO, ParagraphDTO, RunDTO, TableDTO
 
 
@@ -24,25 +25,20 @@ class DocxExtractor:
         # 2. Open document via python-docx
         doc = Document(file_path)
 
-        # 3. Initialize empty DTO collections
+        # 3. Initialize style hierarchy resolver
+        resolver = StyleHierarchyResolver(doc)
+
+        # 4. Initialize empty DTO collections
         paragraphs_dto: list[ParagraphDTO] = []
         tables_dto: list[TableDTO] = []
 
-        # 4. Iterate over paragraphs
+        # 5. Iterate over paragraphs
         for p in doc.paragraphs:
             text = p.text
             style_name = p.style.name if (p.style and hasattr(p.style, "name") and p.style.name) else "Normal"
 
-            alignment: str | None = None
-            if p.alignment is not None:
-                alignment = getattr(p.alignment, "name", str(p.alignment))
-
-            indent_mm = 0.0
-            if p.paragraph_format and p.paragraph_format.first_line_indent is not None:
-                try:
-                    indent_mm = float(p.paragraph_format.first_line_indent.mm)
-                except Exception:
-                    indent_mm = 0.0
+            alignment = resolver.get_paragraph_alignment(p)
+            indent_mm = resolver.get_paragraph_indent_mm(p)
 
             style_lower = style_name.lower()
             is_heading = "heading" in style_lower or "заголовок" in style_lower
@@ -51,13 +47,7 @@ class DocxExtractor:
             for run in p.runs:
                 is_bold = bool(run.bold)
                 is_italic = bool(run.italic)
-                font_size_pt: float | None = None
-
-                if run.font and run.font.size is not None:
-                    try:
-                        font_size_pt = float(run.font.size.pt)
-                    except Exception:
-                        font_size_pt = None
+                font_size_pt = resolver.get_run_font_size(run, p)
 
                 runs_dto.append(
                     RunDTO(
@@ -68,6 +58,14 @@ class DocxExtractor:
                     )
                 )
 
+            # Extract list nesting level
+            list_level = resolver.get_list_level(p)
+
+            # Check for embedded images (DrawingML or VML)
+            has_image = False
+            if hasattr(p, "_p") and p._p is not None:
+                has_image = bool(p._p.xpath(".//w:drawing | .//w:pict"))
+
             paragraphs_dto.append(
                 ParagraphDTO(
                     text=text,
@@ -76,6 +74,8 @@ class DocxExtractor:
                     indent_mm=indent_mm,
                     is_heading=is_heading,
                     runs=runs_dto,
+                    list_level=list_level,
+                    has_image=has_image,
                 )
             )
 
@@ -97,10 +97,43 @@ class DocxExtractor:
                 )
             )
 
-        # 6. Return populated DocumentDTO
+        # 6. Extract section margins (from the first section if available)
+        margin_left_mm: float | None = None
+        margin_right_mm: float | None = None
+        margin_top_mm: float | None = None
+        margin_bottom_mm: float | None = None
+
+        if doc.sections:
+            section = doc.sections[0]
+            if section.left_margin is not None:
+                try:
+                    margin_left_mm = float(section.left_margin.mm)
+                except Exception:
+                    margin_left_mm = None
+            if section.right_margin is not None:
+                try:
+                    margin_right_mm = float(section.right_margin.mm)
+                except Exception:
+                    margin_right_mm = None
+            if section.top_margin is not None:
+                try:
+                    margin_top_mm = float(section.top_margin.mm)
+                except Exception:
+                    margin_top_mm = None
+            if section.bottom_margin is not None:
+                try:
+                    margin_bottom_mm = float(section.bottom_margin.mm)
+                except Exception:
+                    margin_bottom_mm = None
+
+        # 7. Return populated DocumentDTO
         return DocumentDTO(
             paragraphs=paragraphs_dto,
             tables=tables_dto,
             total_pages=pages,
             words_count=words,
+            margin_left_mm=margin_left_mm,
+            margin_right_mm=margin_right_mm,
+            margin_top_mm=margin_top_mm,
+            margin_bottom_mm=margin_bottom_mm,
         )

@@ -53,7 +53,7 @@ async def create_job(
     await db.refresh(new_job)
 
     # 4. Enqueue background Celery task
-    validate_vkr.delay(str(new_job.id), file_path)
+    validate_vkr.delay(str(new_job.id), file_path, profile_id)
 
     # 5. Return creation response
     return JobCreateResponse(
